@@ -10,7 +10,7 @@ const CDF_PER_USD = 2800;
 function formatPrice(amount: number, currency: string) {
   if (currency === 'USD') {
     const usd = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 2 }).format(amount);
-    const cdf = new Intl.NumberFormat('fr-CD', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(amount * CDF_PER_USD));
+    const cdf = new Intl.NumberFormat('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Math.round(amount * CDF_PER_USD));
     return { primary: usd, secondary: `FC ${cdf}` };
   }
   const val = new Intl.NumberFormat('en-KE', { style: 'currency', currency, minimumFractionDigits: 0 }).format(amount);
