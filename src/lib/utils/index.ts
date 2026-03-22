@@ -14,6 +14,18 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
   }).format(amount);
 }
 
+/** Format a Congolese Franc amount: "15 000 FC" — no locale dependency */
+export function formatCDF(amount: number): string {
+  const rounded = Math.round(amount);
+  const str = rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+  return `${str} FC`;
+}
+
+/** Format a USD amount: "$15.00" */
+export function formatUSD(amount: number): string {
+  return `$${Math.abs(amount).toFixed(2)}`;
+}
+
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   return d.toLocaleDateString('en-KE', options || {
