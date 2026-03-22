@@ -72,7 +72,7 @@ export default function ReconciliationPage() {
         <StatCard title="Total Sales" value={formatCurrency(totalSales)} />
       </div>
       <Card className="mb-6">
-        <CardHeader><CardTitle className="text-base">Close Today's Register</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Close Today&apos;s Register</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid sm:grid-cols-2 gap-4">
             <div><Label>Actual Cash Counted (KES)</Label>
