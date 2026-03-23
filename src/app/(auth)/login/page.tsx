@@ -65,7 +65,7 @@ export default function LoginPage() {
                 <Input
                   id="code"
                   type="text"
-                  placeholder="e.g. W01, K01, C01"
+                  placeholder="e.g. W01, K01 or your email"
                   value={code}
                   onChange={e => setCode(e.target.value.toUpperCase())}
                   required
