@@ -54,7 +54,7 @@ export default function LoginPage() {
             <Coffee className="h-7 w-7 text-primary" />
           </div>
           <CardTitle className="text-2xl">Karibu Café</CardTitle>
-          <CardDescription>Enter your staff code to sign in</CardDescription>
+          <CardDescription>Enter your staff code or email to sign in</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -71,12 +71,12 @@ export default function LoginPage() {
                   required
                   autoComplete="username"
                   autoCapitalize="characters"
-                  className="pl-9 font-mono tracking-widest text-lg uppercase"
+                  className="pl-9 font-mono tracking-wider"
                   autoFocus
                 />
               </div>
               <p className="text-xs text-muted-foreground">
-                Your short code assigned by the manager
+                Short code (e.g. W01) or your full email address
               </p>
             </div>
 
