@@ -10,10 +10,10 @@ import { useToast } from '@/components/ui/toast';
 import { useLang } from '@/lib/i18n/context';
 import {
   Banknote, CreditCard, Smartphone, Check, Receipt, ShoppingBag,
-  ChefHat, Plus, Minus, X, Lock, Coffee, Printer,
+  ChefHat, Plus, Minus, X, Lock, Coffee, Printer, Sparkles,
 } from 'lucide-react';
 import { cn, formatCDF, formatUSD, formatDate } from '@/lib/utils';
-import type { Order, OrderItem, MenuItem, MenuCategory, MenuItemModifier } from '@/types';
+import type { Order, OrderItem, MenuItem, MenuCategory, MenuItemModifier, RestaurantTable } from '@/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const TVA_RATE = 0.16;
@@ -228,6 +228,7 @@ export default function CashierPage() {
 
   // ── Bills queue ────────────────────────────────────────────────────────────
   const [billedOrders, setBilledOrders] = useState<BilledOrder[]>([]);
+  const [cleaningTables, setCleaningTables] = useState<RestaurantTable[]>([]);
   const [processing, setProcessing] = useState<string | null>(null);
   const [payStates, setPayStates] = useState<Record<string, OrderPayState>>({});
 
@@ -277,6 +278,24 @@ export default function CashierPage() {
     })));
   }, [supabase, user]);
 
+  const loadCleaningTables = useCallback(async () => {
+    if (!user?.branch_id) return;
+    const { data } = await supabase.from('restaurant_tables')
+      .select('*').eq('branch_id', user.branch_id).eq('status', 'cleaning').order('sort_order');
+    setCleaningTables(data || []);
+  }, [supabase, user]);
+
+  const markTableAvailable = async (tableId: string, tableNumber: string) => {
+    const { error } = await supabase.from('restaurant_tables')
+      .update({ status: 'available' }).eq('id', tableId);
+    if (error) {
+      toast({ title: 'Failed', description: error.message, variant: 'error' });
+    } else {
+      toast({ title: `${t.cashier.tableMarkedAvailable} — ${tableNumber}`, variant: 'success' });
+      loadCleaningTables();
+    }
+  };
+
   const loadMenuData = useCallback(async () => {
     if (!user?.branch_id) return;
     const [cRes, mRes, modRes] = await Promise.all([
@@ -307,7 +326,7 @@ export default function CashierPage() {
 
   useEffect(() => {
     if (!user?.branch_id) return;
-    Promise.all([loadBilledOrders(), loadMenuData(), loadReconciliation()]).then(() => setLoading(false));
+    Promise.all([loadBilledOrders(), loadCleaningTables(), loadMenuData(), loadReconciliation()]).then(() => setLoading(false));
   }, [user]);
 
   // Realtime
@@ -315,9 +334,10 @@ export default function CashierPage() {
     if (!user?.branch_id) return;
     const channel = supabase.channel('cashier-orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `branch_id=eq.${user.branch_id}` }, loadBilledOrders)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurant_tables', filter: `branch_id=eq.${user.branch_id}` }, loadCleaningTables)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, [supabase, user, loadBilledOrders]);
+  }, [supabase, user, loadBilledOrders, loadCleaningTables]);
 
   // ── Bill math ──────────────────────────────────────────────────────────────
   const getBillAmounts = (order: BilledOrder) => {
@@ -398,6 +418,7 @@ export default function CashierPage() {
 
       toast({ title: `Order #${order.order_number} — ${formatCDF(ttc)} collected`, variant: 'success' });
       loadReconciliation();
+      loadCleaningTables();
     } catch (err: any) {
       toast({ title: t.cashier.paymentFailed, description: err.message, variant: 'error' });
     } finally {
@@ -742,6 +763,39 @@ export default function CashierPage() {
                   </Card>
                 );
               })}
+            </div>
+          )}
+
+          {/* ── Cleaning Tables ──────────────────────────────────────────── */}
+          {cleaningTables.length > 0 && (
+            <div className="mt-8">
+              <div className="flex items-center gap-2 mb-3">
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                  {t.cashier.cleaningTables}
+                </h3>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                {cleaningTables.map(table => (
+                  <div key={table.id} className="flex items-center gap-3 rounded-lg border bg-muted/30 px-4 py-2.5">
+                    <div>
+                      <p className="font-bold text-lg leading-none">{table.table_number}</p>
+                      {table.capacity && (
+                        <p className="text-xs text-muted-foreground mt-0.5">{table.capacity} seats</p>
+                      )}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-success text-success hover:bg-success hover:text-success-foreground"
+                      onClick={() => markTableAvailable(table.id, table.table_number)}
+                    >
+                      <Check className="h-3.5 w-3.5 mr-1.5" />
+                      {t.cashier.markAvailable}
+                    </Button>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </>

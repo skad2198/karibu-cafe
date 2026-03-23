@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { StatusBadge, EmptyState, LoadingState, PageHeader } from '@/components/shared';
 import { useToast } from '@/components/ui/toast';
 import { useLang } from '@/lib/i18n/context';
-import { Plus, Minus, Send, X, ShoppingCart, Coffee, CreditCard, ShoppingBag, Bell, Flame, Check } from 'lucide-react';
+import { Plus, Minus, Send, X, ShoppingCart, Coffee, CreditCard, ShoppingBag, Bell, Flame, Check, Sparkles } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { RestaurantTable, MenuItem, MenuCategory, MenuItemModifier, Order, OrderItem } from '@/types';
 
@@ -326,25 +326,42 @@ export default function WaiterPOSPage() {
           </Button>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {tables.map(table => (
-            <button
-              key={table.id}
-              onClick={() => selectTable(table)}
-              className={cn(
-                'rounded-xl border-2 p-6 text-center transition-all active:scale-95 touch-target',
-                table.status === 'available' && 'border-success/40 bg-success/5 hover:bg-success/10',
-                table.status === 'occupied' && 'border-info/40 bg-info/5 hover:bg-info/10',
-                table.status === 'billing' && 'border-warning/40 bg-warning/5 hover:bg-warning/10',
-                table.status === 'cleaning' && 'border-border bg-muted hover:bg-muted/80',
-              )}
-            >
-              <p className="text-2xl font-bold">{table.table_number}</p>
-              <StatusBadge status={table.status} className="mt-2" />
-              {table.capacity && (
-                <p className="text-xs text-muted-foreground mt-1">{table.capacity} {t.waiter.seats}</p>
-              )}
-            </button>
-          ))}
+          {tables.map(table => {
+            const isCleaning = table.status === 'cleaning';
+            return (
+              <button
+                key={table.id}
+                onClick={async () => {
+                  if (isCleaning) {
+                    const { error } = await supabase.from('restaurant_tables')
+                      .update({ status: 'available' }).eq('id', table.id);
+                    if (!error) toast({ title: `${t.waiter.tableMarkedAvailable} — ${table.table_number}`, variant: 'success' });
+                  } else {
+                    selectTable(table);
+                  }
+                }}
+                className={cn(
+                  'rounded-xl border-2 p-6 text-center transition-all active:scale-95 touch-target',
+                  table.status === 'available' && 'border-success/40 bg-success/5 hover:bg-success/10',
+                  table.status === 'occupied' && 'border-info/40 bg-info/5 hover:bg-info/10',
+                  table.status === 'billing' && 'border-warning/40 bg-warning/5 hover:bg-warning/10',
+                  isCleaning && 'border-muted-foreground/30 bg-muted hover:bg-accent',
+                )}
+              >
+                <p className="text-2xl font-bold">{table.table_number}</p>
+                <StatusBadge status={table.status} className="mt-2" />
+                {isCleaning && (
+                  <p className="text-xs text-muted-foreground mt-2 flex items-center justify-center gap-1">
+                    <Sparkles className="h-3 w-3" />
+                    {t.waiter.tapToMarkClean}
+                  </p>
+                )}
+                {!isCleaning && table.capacity && (
+                  <p className="text-xs text-muted-foreground mt-1">{table.capacity} {t.waiter.seats}</p>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
     );

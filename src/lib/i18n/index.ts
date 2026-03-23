@@ -81,6 +81,9 @@ export const translations = {
       cannotAddToBilled: 'Cannot add items — bill already requested',
       itemsReadyBanner: 'item(s) ready from kitchen!',
       orderNumber: '#',
+      markAvailable: 'Mark Available',
+      tableMarkedAvailable: 'Table marked available',
+      tapToMarkClean: 'Tap to mark as available',
     },
     kitchen: {
       title: 'Kitchen Display',
@@ -155,6 +158,10 @@ export const translations = {
       changeMaxUSD: 'Max in USD',
       printInvoice: 'Print Invoice',
       insufficientPayment: 'Amount received is less than total',
+      cleaningTables: 'Tables Being Cleaned',
+      noCleaningTables: 'No tables in cleaning',
+      markAvailable: 'Mark Available',
+      tableMarkedAvailable: 'Table marked available',
     },
     billing: {
       title: 'Billing',
@@ -320,6 +327,9 @@ export const translations = {
       cannotAddToBilled: 'Impossible — addition déjà demandée',
       itemsReadyBanner: 'article(s) prêt(s) en cuisine !',
       orderNumber: '#',
+      markAvailable: 'Libérer la Table',
+      tableMarkedAvailable: 'Table disponible',
+      tapToMarkClean: 'Appuyer pour libérer',
     },
     kitchen: {
       title: 'Affichage Cuisine',
@@ -394,6 +404,10 @@ export const translations = {
       changeMaxUSD: 'Max en USD',
       printInvoice: 'Imprimer la Facture',
       insufficientPayment: 'Montant insuffisant',
+      cleaningTables: 'Tables en Nettoyage',
+      noCleaningTables: 'Aucune table en nettoyage',
+      markAvailable: 'Libérer la Table',
+      tableMarkedAvailable: 'Table disponible',
     },
     billing: {
       title: 'Facturation',

@@ -12,7 +12,7 @@ import {
 import {
   Coffee, LayoutDashboard, UtensilsCrossed, ChefHat,
   Package, Truck, Receipt, Calculator, Clock, Users,
-  FileText, LogOut, Menu, X, Sun, Moon, ClipboardList, Warehouse, Shield, CreditCard, ShoppingBag, AlertTriangle,
+  FileText, LogOut, Menu, X, Sun, Moon, ClipboardList, Warehouse, Shield, ShoppingBag, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/context';
@@ -34,7 +34,6 @@ const navItems: NavItem[] = [
   { labelKey: 'dashboard',      href: '/dashboard/manager',                icon: <LayoutDashboard className="h-5 w-5" />, roles: ['admin', 'manager'] },
   { labelKey: 'orders',         href: '/dashboard/waiter',                 icon: <UtensilsCrossed className="h-5 w-5" />, roles: ['admin', 'manager', 'waiter'] },
   { labelKey: 'cashier',        href: '/dashboard/cashier',                icon: <ShoppingBag className="h-5 w-5" />,     roles: ['admin', 'manager', 'cashier'] },
-  { labelKey: 'billing',        href: '/dashboard/manager/billing',        icon: <CreditCard className="h-5 w-5" />,      roles: ['admin', 'manager'] },
   { labelKey: 'kitchen',        href: '/dashboard/kitchen',                icon: <ChefHat className="h-5 w-5" />,         roles: ['admin', 'manager', 'kitchen'] },
   { labelKey: 'menu',           href: '/dashboard/manager/menu',           icon: <Coffee className="h-5 w-5" />,          roles: ['admin', 'manager'] },
   { labelKey: 'tables',         href: '/dashboard/manager/tables',         icon: <ClipboardList className="h-5 w-5" />,   roles: ['admin', 'manager'] },
