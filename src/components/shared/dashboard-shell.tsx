@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
@@ -12,11 +12,16 @@ import {
 import {
   Coffee, LayoutDashboard, UtensilsCrossed, ChefHat,
   Package, Truck, Receipt, Calculator, Clock, Users,
-  FileText, LogOut, Menu, X, Sun, Moon, ClipboardList, Warehouse, Shield, CreditCard, ShoppingBag,
+  FileText, LogOut, Menu, X, Sun, Moon, ClipboardList, Warehouse, Shield, CreditCard, ShoppingBag, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useLang } from '@/lib/i18n/context';
 import type { SessionUser, AppRole } from '@/types';
+
+// ── Inactivity config ──────────────────────────────────────────────────────
+const INACTIVITY_LIMIT_MS = 2 * 60 * 60 * 1000;   // 2 hours
+const WARN_BEFORE_MS      = 10 * 60 * 1000;         // warn 10 min before
+const CHECK_INTERVAL_MS   = 60 * 1000;              // check every 1 min
 
 interface NavItem {
   labelKey: string;
@@ -26,22 +31,22 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { labelKey: 'dashboard',      href: '/dashboard/manager',             icon: <LayoutDashboard className="h-5 w-5" />, roles: ['admin', 'manager'] },
-  { labelKey: 'orders',         href: '/dashboard/waiter',              icon: <UtensilsCrossed className="h-5 w-5" />, roles: ['admin', 'manager', 'waiter'] },
-  { labelKey: 'cashier',        href: '/dashboard/cashier',             icon: <ShoppingBag className="h-5 w-5" />,     roles: ['admin', 'manager', 'cashier'] },
-  { labelKey: 'billing',        href: '/dashboard/manager/billing',     icon: <CreditCard className="h-5 w-5" />,      roles: ['admin', 'manager'] },
-  { labelKey: 'kitchen',        href: '/dashboard/kitchen',             icon: <ChefHat className="h-5 w-5" />,         roles: ['admin', 'manager', 'kitchen'] },
-  { labelKey: 'menu',           href: '/dashboard/manager/menu',        icon: <Coffee className="h-5 w-5" />,          roles: ['admin', 'manager'] },
-  { labelKey: 'tables',         href: '/dashboard/manager/tables',      icon: <ClipboardList className="h-5 w-5" />,   roles: ['admin', 'manager'] },
-  { labelKey: 'suppliers',      href: '/dashboard/manager/suppliers',   icon: <Truck className="h-5 w-5" />,           roles: ['admin', 'manager'] },
-  { labelKey: 'inventory',      href: '/dashboard/manager/inventory',   icon: <Package className="h-5 w-5" />,         roles: ['admin', 'manager'] },
-  { labelKey: 'assets',         href: '/dashboard/manager/assets',      icon: <Warehouse className="h-5 w-5" />,       roles: ['admin', 'manager'] },
-  { labelKey: 'expenses',       href: '/dashboard/manager/expenses',    icon: <Receipt className="h-5 w-5" />,         roles: ['admin', 'manager'] },
-  { labelKey: 'reconciliation', href: '/dashboard/manager/reconciliation', icon: <Calculator className="h-5 w-5" />,  roles: ['admin', 'manager'] },
-  { labelKey: 'reports',        href: '/dashboard/manager/reports',     icon: <FileText className="h-5 w-5" />,        roles: ['admin', 'manager'] },
-  { labelKey: 'attendance',     href: '/dashboard/staff',               icon: <Clock className="h-5 w-5" />,           roles: ['admin', 'manager', 'staff', 'waiter', 'kitchen', 'cashier'] },
-  { labelKey: 'users',          href: '/dashboard/manager/users',       icon: <Users className="h-5 w-5" />,           roles: ['admin', 'manager'] },
-  { labelKey: 'auditLog',       href: '/dashboard/manager/audit',       icon: <Shield className="h-5 w-5" />,          roles: ['admin', 'manager'] },
+  { labelKey: 'dashboard',      href: '/dashboard/manager',                icon: <LayoutDashboard className="h-5 w-5" />, roles: ['admin', 'manager'] },
+  { labelKey: 'orders',         href: '/dashboard/waiter',                 icon: <UtensilsCrossed className="h-5 w-5" />, roles: ['admin', 'manager', 'waiter'] },
+  { labelKey: 'cashier',        href: '/dashboard/cashier',                icon: <ShoppingBag className="h-5 w-5" />,     roles: ['admin', 'manager', 'cashier'] },
+  { labelKey: 'billing',        href: '/dashboard/manager/billing',        icon: <CreditCard className="h-5 w-5" />,      roles: ['admin', 'manager'] },
+  { labelKey: 'kitchen',        href: '/dashboard/kitchen',                icon: <ChefHat className="h-5 w-5" />,         roles: ['admin', 'manager', 'kitchen'] },
+  { labelKey: 'menu',           href: '/dashboard/manager/menu',           icon: <Coffee className="h-5 w-5" />,          roles: ['admin', 'manager'] },
+  { labelKey: 'tables',         href: '/dashboard/manager/tables',         icon: <ClipboardList className="h-5 w-5" />,   roles: ['admin', 'manager'] },
+  { labelKey: 'suppliers',      href: '/dashboard/manager/suppliers',      icon: <Truck className="h-5 w-5" />,           roles: ['admin', 'manager'] },
+  { labelKey: 'inventory',      href: '/dashboard/manager/inventory',      icon: <Package className="h-5 w-5" />,         roles: ['admin', 'manager'] },
+  { labelKey: 'assets',         href: '/dashboard/manager/assets',         icon: <Warehouse className="h-5 w-5" />,       roles: ['admin', 'manager'] },
+  { labelKey: 'expenses',       href: '/dashboard/manager/expenses',       icon: <Receipt className="h-5 w-5" />,         roles: ['admin', 'manager'] },
+  { labelKey: 'reconciliation', href: '/dashboard/manager/reconciliation', icon: <Calculator className="h-5 w-5" />,      roles: ['admin', 'manager'] },
+  { labelKey: 'reports',        href: '/dashboard/manager/reports',        icon: <FileText className="h-5 w-5" />,        roles: ['admin', 'manager'] },
+  { labelKey: 'attendance',     href: '/dashboard/staff',                  icon: <Clock className="h-5 w-5" />,           roles: ['admin', 'manager', 'staff', 'waiter', 'kitchen', 'cashier'] },
+  { labelKey: 'users',          href: '/dashboard/manager/users',          icon: <Users className="h-5 w-5" />,           roles: ['admin', 'manager'] },
+  { labelKey: 'auditLog',       href: '/dashboard/manager/audit',          icon: <Shield className="h-5 w-5" />,          roles: ['admin', 'manager'] },
 ];
 
 export function DashboardShell({ user, children }: { user: SessionUser; children: React.ReactNode }) {
@@ -51,14 +56,48 @@ export function DashboardShell({ user, children }: { user: SessionUser; children
   const { theme, setTheme } = useTheme();
   const { lang, setLang, t } = useLang();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [inactiveWarning, setInactiveWarning] = useState(false);
+  const [countdown, setCountdown] = useState(WARN_BEFORE_MS / 60000); // minutes remaining
 
-  const visibleItems = navItems.filter(item => item.roles.some(r => user.roles.includes(r)));
+  const lastActivityRef = useRef(Date.now());
 
-  async function handleSignOut() {
+  const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
-  }
+  }, [supabase, router]);
+
+  // ── Inactivity tracker ───────────────────────────────────────────────────
+  useEffect(() => {
+    const touch = () => {
+      lastActivityRef.current = Date.now();
+      setInactiveWarning(false);
+    };
+
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'click'];
+    events.forEach(e => window.addEventListener(e, touch, { passive: true }));
+
+    const interval = setInterval(() => {
+      const idle = Date.now() - lastActivityRef.current;
+      if (idle >= INACTIVITY_LIMIT_MS) {
+        // Auto sign out
+        signOut();
+      } else if (idle >= INACTIVITY_LIMIT_MS - WARN_BEFORE_MS) {
+        const minsLeft = Math.ceil((INACTIVITY_LIMIT_MS - idle) / 60000);
+        setCountdown(minsLeft);
+        setInactiveWarning(true);
+      } else {
+        setInactiveWarning(false);
+      }
+    }, CHECK_INTERVAL_MS);
+
+    return () => {
+      events.forEach(e => window.removeEventListener(e, touch));
+      clearInterval(interval);
+    };
+  }, [signOut]);
+
+  const visibleItems = navItems.filter(item => item.roles.some(r => user.roles.includes(r)));
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -128,7 +167,7 @@ export function DashboardShell({ user, children }: { user: SessionUser; children
                   {theme === 'dark' ? 'Light Mode' : 'Mode Clair'}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
+                <DropdownMenuItem onClick={signOut}>
                   <LogOut className="mr-2 h-4 w-4" />
                   {lang === 'en' ? 'Sign Out' : 'Déconnexion'}
                 </DropdownMenuItem>
@@ -140,6 +179,25 @@ export function DashboardShell({ user, children }: { user: SessionUser; children
 
       {/* Main */}
       <main className="flex-1 overflow-y-auto">
+        {/* Inactivity warning banner */}
+        {inactiveWarning && (
+          <div className="sticky top-0 z-50 flex items-center gap-3 bg-warning/15 border-b border-warning/30 px-4 py-2.5 text-sm">
+            <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
+            <span className="text-warning font-medium">
+              {lang === 'en'
+                ? `Inactive — you will be signed out in ${countdown} minute${countdown !== 1 ? 's' : ''}`
+                : `Inactif — déconnexion dans ${countdown} minute${countdown !== 1 ? 's' : ''}`
+              }
+            </span>
+            <button
+              onClick={() => { lastActivityRef.current = Date.now(); setInactiveWarning(false); }}
+              className="ml-auto text-xs underline text-warning font-medium"
+            >
+              {lang === 'en' ? "I'm still here" : "Je suis là"}
+            </button>
+          </div>
+        )}
+
         {/* Top bar */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/95 backdrop-blur px-4 lg:px-6">
           <button className="lg:hidden" onClick={() => setSidebarOpen(true)}>
