@@ -79,6 +79,8 @@ export const translations = {
       customerName: 'Customer name (optional)',
       orderType: 'Order type',
       cannotAddToBilled: 'Cannot add items — bill already requested',
+      itemsReadyBanner: 'item(s) ready from kitchen!',
+      orderNumber: '#',
     },
     kitchen: {
       title: 'Kitchen Display',
@@ -92,6 +94,12 @@ export const translations = {
       failedOrder: 'Failed to update order',
       failedItem: 'Failed to update item',
       markedAs: 'Item marked as',
+      liveOrders: 'Live Orders',
+      todayLog: "Today's Log",
+      noLogToday: 'No orders today',
+      noLogTodayDesc: 'Served and completed orders will appear here',
+      submittedAt: 'Submitted',
+      logItem: 'Item',
     },
     cashier: {
       title: 'Cashier',
@@ -310,6 +318,8 @@ export const translations = {
       customerName: 'Nom du client (optionnel)',
       orderType: 'Type de commande',
       cannotAddToBilled: 'Impossible — addition déjà demandée',
+      itemsReadyBanner: 'article(s) prêt(s) en cuisine !',
+      orderNumber: '#',
     },
     kitchen: {
       title: 'Affichage Cuisine',
@@ -323,6 +333,12 @@ export const translations = {
       failedOrder: 'Échec de la mise à jour',
       failedItem: "Échec de la mise à jour de l'article",
       markedAs: 'Article marqué comme',
+      liveOrders: 'Commandes en direct',
+      todayLog: "Journal du jour",
+      noLogToday: "Aucune commande aujourd'hui",
+      noLogTodayDesc: 'Les commandes servies apparaîtront ici',
+      submittedAt: 'Soumise à',
+      logItem: 'Article',
     },
     cashier: {
       title: 'Caisse',

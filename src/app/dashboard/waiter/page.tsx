@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { StatusBadge, EmptyState, LoadingState, PageHeader } from '@/components/shared';
 import { useToast } from '@/components/ui/toast';
 import { useLang } from '@/lib/i18n/context';
-import { Plus, Minus, Send, X, ShoppingCart, Coffee, CreditCard, ShoppingBag } from 'lucide-react';
+import { Plus, Minus, Send, X, ShoppingCart, Coffee, CreditCard, ShoppingBag, Bell, Flame, Check } from 'lucide-react';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { RestaurantTable, MenuItem, MenuCategory, MenuItemModifier, Order, OrderItem } from '@/types';
 
@@ -96,6 +96,29 @@ export default function WaiterPOSPage() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [supabase, user]);
+
+  // Realtime order_items updates for active order
+  const refreshExistingItems = useCallback(async (orderId: string) => {
+    const { data: items } = await supabase
+      .from('order_items')
+      .select('*, order_item_modifiers(*)')
+      .eq('order_id', orderId)
+      .order('created_at');
+    setExistingItems((items || []).map((i: any) => ({ ...i, modifiers: i.order_item_modifiers })));
+  }, [supabase]);
+
+  useEffect(() => {
+    if (!activeOrder?.id) return;
+    const channel = supabase.channel(`order-items-${activeOrder.id}`)
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'order_items',
+        filter: `order_id=eq.${activeOrder.id}`,
+      }, () => {
+        refreshExistingItems(activeOrder.id);
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [supabase, activeOrder?.id, refreshExistingItems]);
 
   // Select table
   const selectTable = useCallback(async (table: RestaurantTable) => {
@@ -386,21 +409,54 @@ export default function WaiterPOSPage() {
             <ShoppingCart className="h-4 w-4" />
             {t.waiter.orderPanel}
           </h3>
+          {/* Ready items banner */}
+          {existingItems.filter(i => i.status === 'ready').length > 0 && (
+            <div className="mt-2 flex items-center gap-2 rounded-md bg-success/15 border border-success/30 px-3 py-2 text-xs text-success font-medium">
+              <Bell className="h-3.5 w-3.5 shrink-0" />
+              {existingItems.filter(i => i.status === 'ready').length} {t.waiter.itemsReadyBanner}
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
           {/* Existing items */}
           {existingItems.map(item => (
-            <div key={item.id} className="flex items-start justify-between py-2 border-b text-sm opacity-70">
-              <div className="flex-1 min-w-0">
-                <p className="font-medium">{item.name} x{item.quantity}</p>
-                {item.modifiers && item.modifiers.length > 0 && (
-                  <p className="text-xs text-muted-foreground">{item.modifiers.map((m: any) => m.name).join(', ')}</p>
-                )}
-                {item.notes && <p className="text-xs text-muted-foreground italic">{item.notes}</p>}
-                <StatusBadge status={item.status} className="mt-1" />
+            <div key={item.id} className={cn(
+              'flex items-start justify-between py-2 border-b text-sm',
+              item.status === 'ready' && 'bg-success/5 -mx-4 px-4',
+            )}>
+              <div className="flex items-start gap-2 flex-1 min-w-0">
+                {/* Kitchen status icon */}
+                <div className={cn(
+                  'mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0',
+                  item.status === 'new' && 'bg-info/20 text-info',
+                  item.status === 'preparing' && 'bg-warning/20 text-warning',
+                  item.status === 'ready' && 'bg-success text-success-foreground',
+                  item.status === 'served' && 'bg-muted text-muted-foreground',
+                )}>
+                  {item.status === 'ready' && <Check className="h-3 w-3" />}
+                  {item.status === 'preparing' && <Flame className="h-3 w-3" />}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className={cn('font-medium', item.status === 'served' && 'opacity-50')}>
+                    {item.name} x{item.quantity}
+                  </p>
+                  {item.modifiers && item.modifiers.length > 0 && (
+                    <p className="text-xs text-muted-foreground">{item.modifiers.map((m: any) => m.name).join(', ')}</p>
+                  )}
+                  {item.notes && <p className="text-xs text-muted-foreground italic">{item.notes}</p>}
+                  <span className={cn(
+                    'inline-block text-xs mt-0.5 font-medium capitalize',
+                    item.status === 'new' && 'text-info',
+                    item.status === 'preparing' && 'text-warning',
+                    item.status === 'ready' && 'text-success font-bold',
+                    item.status === 'served' && 'text-muted-foreground',
+                  )}>
+                    {item.status}
+                  </span>
+                </div>
               </div>
-              <p className="font-medium ml-2">{formatCurrency(Number(item.total_price))}</p>
+              <p className="font-medium ml-2 shrink-0">{formatCurrency(Number(item.total_price))}</p>
             </div>
           ))}
 
